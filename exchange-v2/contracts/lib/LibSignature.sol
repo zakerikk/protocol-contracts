@@ -24,7 +24,7 @@ library LibSignature {
     {
         // Check the signature length
         if (signature.length != 65) {
-            revert("ECDSA: invalid signature length");
+            revert("e41");//ECDSA: invalid signature length
         }
 
         // Divide the signature in r, s and v variables
@@ -66,8 +66,8 @@ library LibSignature {
         require(
             uint256(s) <=
                 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0,
-            "ECDSA: invalid signature 's' value"
-        );
+            "e19"
+        );//ECDSA: invalid signature 's' value
 
         // If the signature is valid (and not malleable), return the signer address
         // v > 30 is a special case, we need to adjust hash with "\x19Ethereum Signed Message:\n32"
@@ -76,15 +76,15 @@ library LibSignature {
         if (v > 30) {
             require(
                 v - 4 == 27 || v - 4 == 28,
-                "ECDSA: invalid signature 'v' value"
-            );
+                "e20"
+            );//ECDSA: invalid signature 'v' value
             signer = ecrecover(toEthSignedMessageHash(hash), v - 4, r, s);
         } else {
-            require(v == 27 || v == 28, "ECDSA: invalid signature 'v' value");
+            require(v == 27 || v == 28, "e21");//ECDSA: invalid signature 'v' value
             signer = ecrecover(hash, v, r, s);
         }
 
-        require(signer != address(0), "ECDSA: invalid signature");
+        require(signer != address(0), "e22");//ECDSA: invalid signature
 
         return signer;
     }

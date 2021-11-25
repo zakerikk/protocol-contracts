@@ -15,7 +15,7 @@ library LibOrderData {
             dataOrder = LibOrderDataV2.decodeOrderDataV2(order.data);
         } else if (order.dataType == 0xffffffff) {
         } else {
-            revert("Unknown Order data type");
+            revert("e42");//Unknown Order data type
         }
         if (dataOrder.payouts.length == 0) {
             dataOrder.payouts = payoutSet(order.maker);

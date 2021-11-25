@@ -19,8 +19,9 @@ library LibMath {
         uint256 target
     ) internal pure returns (uint256 partialAmount) {
         if (isRoundingErrorFloor(numerator, denominator, target)) {
-            revert("rounding error");
+            revert("m1");//rounding error
         }
+//        require(!isRoundingErrorFloor(numerator, denominator, target), "m1");//rounding error
         partialAmount = numerator.mul(target).div(denominator);
     }
 
@@ -35,7 +36,7 @@ library LibMath {
         uint256 target
     ) internal pure returns (bool isError) {
         if (denominator == 0) {
-            revert("division by zero");
+            revert("m2");//division by zero
         }
 
         // The absolute rounding error is the difference between the rounded
@@ -78,7 +79,7 @@ library LibMath {
         uint256 target
     ) internal pure returns (uint256 partialAmount) {
         if (isRoundingErrorCeil(numerator, denominator, target)) {
-            revert("rounding error");
+            revert("m1");//rounding error
         }
         partialAmount = numerator.mul(target).add(denominator.sub(1)).div(denominator);
     }
@@ -94,7 +95,7 @@ library LibMath {
         uint256 target
     ) internal pure returns (bool isError) {
         if (denominator == 0) {
-            revert("division by zero");
+            revert("m2");//division by zero
         }
 
         // See the comments in `isRoundingError`.

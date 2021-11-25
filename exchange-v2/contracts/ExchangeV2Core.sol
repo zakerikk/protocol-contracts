@@ -28,7 +28,6 @@ abstract contract ExchangeV2Core is Initializable, OwnableUpgradeable, AssetMatc
         LibOrder.Order order;
         uint fee;
     }
-
     //events
     event Cancel(bytes32 hash, address maker, LibAsset.AssetType makeAssetType, LibAsset.AssetType takeAssetType);
     event Match(bytes32 leftHash, bytes32 rightHash, address leftMaker, address rightMaker, uint newLeftFill, uint newRightFill, LibAsset.AssetType leftAsset, LibAsset.AssetType rightAsset);
@@ -39,9 +38,9 @@ abstract contract ExchangeV2Core is Initializable, OwnableUpgradeable, AssetMatc
         bytes32 orderKeyHash = LibOrder.hashKey(order);
 
         //checking if order is correct
-        require(_msgSender() == order.maker, "order.maker must be msg.sender");
-        require(order.takeAsset.value > fills[orderKeyHash], "such take value is already filled");
-        
+        require(_msgSender() == order.maker, "e1"); //order.maker must be msg.sender
+        require(order.takeAsset.value > fills[orderKeyHash], "e2");//such take value is already filled
+
         uint newTotal = getTotalValue(order, orderKeyHash);
 
         //value of makeAsset that needs to be transfered with tx 
@@ -59,8 +58,8 @@ abstract contract ExchangeV2Core is Initializable, OwnableUpgradeable, AssetMatc
         }
 
         if (order.makeAsset.assetType.assetClass == LibAsset.ETH_ASSET_CLASS) {
-            require(order.takeAsset.assetType.assetClass != LibAsset.ETH_ASSET_CLASS, "wrong order: ETH to ETH trades are forbidden");
-            require(msg.value >= sentValue, "not enough eth");
+            require(order.takeAsset.assetType.assetClass != LibAsset.ETH_ASSET_CLASS, "e3");//wrong order: ETH to ETH trades are forbidden
+            require(msg.value >= sentValue, "e4");//not enough eth
 
             if (sentValue > 0) {
                 emit Transfer(LibAsset.Asset(order.makeAsset.assetType, sentValue), order.maker, address(this), TO_LOCK, LOCK);
@@ -81,8 +80,8 @@ abstract contract ExchangeV2Core is Initializable, OwnableUpgradeable, AssetMatc
     }
 
     function cancel(LibOrder.Order memory order) external {
-        require(_msgSender() == order.maker, "not a maker");
-        require(order.salt != 0, "0 salt can't be used");
+        require(_msgSender() == order.maker, "e5");//msg.sender not a maker
+        require(order.salt != 0, "e6");//0 salt can't be used
 
         bytes32 orderKeyHash = LibOrder.hashKey(order);
 
@@ -111,10 +110,10 @@ abstract contract ExchangeV2Core is Initializable, OwnableUpgradeable, AssetMatc
         validateFull(orderLeft, signatureLeft);
         validateFull(orderRight, signatureRight);
         if (orderLeft.taker != address(0)) {
-            require(orderRight.maker == orderLeft.taker, "leftOrder.taker verification failed");
+            require(orderRight.maker == orderLeft.taker, "e7");//leftOrder.taker verification failed
         }
         if (orderRight.taker != address(0)) {
-            require(orderRight.taker == orderLeft.maker, "rightOrder.taker verification failed");
+            require(orderRight.taker == orderLeft.maker, "e8");//rightOrder.taker verification failed
         }
         matchAndTransfer(orderLeft, orderRight);
     }
@@ -151,37 +150,43 @@ abstract contract ExchangeV2Core is Initializable, OwnableUpgradeable, AssetMatc
         uint rightOrderFill = getOrderFill(orderRight, rightOrderKeyHash);
         LibFill.FillResult memory newFill = LibFill.fillOrder(orderLeft, orderRight, leftOrderFill, rightOrderFill, leftOrderData.isMakeFill, rightOrderData.isMakeFill);
 
-        require(newFill.rightValue > 0 && newFill.leftValue > 0, "nothing to fill");
-
-        if (orderLeft.salt != 0) {
-            if (leftOrderData.isMakeFill) {
-                fills[leftOrderKeyHash] = leftOrderFill.add(newFill.leftValue);
-            } else {
-                fills[leftOrderKeyHash] = leftOrderFill.add(newFill.rightValue);
-            }
-        }
-
-        if (orderRight.salt != 0) {
-            if (rightOrderData.isMakeFill) {
-                fills[rightOrderKeyHash] = rightOrderFill.add(newFill.rightValue);
-            } else {
-                fills[rightOrderKeyHash] = rightOrderFill.add(newFill.leftValue);
-            }
-        }
+        require(newFill.rightValue > 0 && newFill.leftValue > 0, "e9");//nothing to fill
+        _fill(orderLeft.salt, leftOrderData.isMakeFill, leftOrderKeyHash, leftOrderFill, newFill.leftValue, newFill.rightValue);
+        _fill(orderRight.salt, rightOrderData.isMakeFill, rightOrderKeyHash, rightOrderFill, newFill.rightValue, newFill.leftValue);
         return newFill;
     }
 
-    function returnChange(LibOrder.MatchedAssets memory matchedAssets, LibOrder.Order memory orderLeft, LibOrder.Order memory orderRight, bytes32 leftOrderKeyHash, bytes32 rightOrderKeyHash, uint totalMakeValue, uint totalTakeValue) internal {
-        bool ethRequired = matchingRequiresEth(orderLeft, orderRight, leftOrderKeyHash, rightOrderKeyHash);
+    function _fill(uint _salt, bool _isMakeFill, bytes32 keyHash, uint ordefFill, uint fillValue, uint value) internal {
+        if (_salt != 0) {
+            if (_isMakeFill) {
+                fills[keyHash] = ordefFill.add(fillValue);
+            } else {
+                fills[keyHash] = ordefFill.add(value);
+            }
+        }
+    }
 
-        if (matchedAssets.makeMatch.assetClass == LibAsset.ETH_ASSET_CLASS && ethRequired) {
+    function returnChange(LibOrder.MatchedAssets memory matchedAssets, LibOrder.Order memory orderLeft, LibOrder.Order memory orderRight, bytes32 leftOrderKeyHash, bytes32 rightOrderKeyHash, uint totalMakeValue, uint totalTakeValue) internal {
+//        bool ethRequired = matchingRequiresEth(orderLeft, orderRight, leftOrderKeyHash, rightOrderKeyHash);
+    bool ethRequired;
+    if (orderLeft.makeAsset.assetType.assetClass == LibAsset.ETH_ASSET_CLASS) {
+        if (!isTheSameAsOnChain(orderLeft, leftOrderKeyHash)) {
+            ethRequired = true;
+        }
+    } else if (orderRight.makeAsset.assetType.assetClass == LibAsset.ETH_ASSET_CLASS) {
+        if (!isTheSameAsOnChain(orderRight, rightOrderKeyHash)) {
+            ethRequired = true;
+        }
+    }
+
+    if (matchedAssets.makeMatch.assetClass == LibAsset.ETH_ASSET_CLASS && ethRequired) {
             require(matchedAssets.takeMatch.assetClass != LibAsset.ETH_ASSET_CLASS);
-            require(msg.value >= totalMakeValue, "not enough eth");
+            require(msg.value >= totalMakeValue, "e4");//not enough eth
             if (msg.value > totalMakeValue) {
                 address(msg.sender).transferEth(msg.value.sub(totalMakeValue));
             }
         } else if (matchedAssets.takeMatch.assetClass == LibAsset.ETH_ASSET_CLASS && ethRequired) {
-            require(msg.value >= totalTakeValue, "not enough eth");
+            require(msg.value >= totalTakeValue, "e4");//not enough eth
             if (msg.value > totalTakeValue) {
                 address(msg.sender).transferEth(msg.value.sub(totalTakeValue));
             }
@@ -198,9 +203,9 @@ abstract contract ExchangeV2Core is Initializable, OwnableUpgradeable, AssetMatc
 
     function matchAssets(LibOrder.Order memory orderLeft, LibOrder.Order memory orderRight) internal view returns (LibOrder.MatchedAssets memory matchedAssets) {
         matchedAssets.makeMatch = matchAssets(orderLeft.makeAsset.assetType, orderRight.takeAsset.assetType);
-        require(matchedAssets.makeMatch.assetClass != 0, "assets don't match");
+        require(matchedAssets.makeMatch.assetClass != 0, "e10");//assets don't match
         matchedAssets.takeMatch = matchAssets(orderLeft.takeAsset.assetType, orderRight.makeAsset.assetType);
-        require(matchedAssets.takeMatch.assetClass != 0, "assets don't match");
+        require(matchedAssets.takeMatch.assetClass != 0, "e10");//assets don't match
     }
 
     function validateFull(LibOrder.Order memory order, bytes memory signature) internal view {
@@ -253,27 +258,27 @@ abstract contract ExchangeV2Core is Initializable, OwnableUpgradeable, AssetMatc
     }
 
     /// @dev Checks if matching such orders requires ether sent with the transaction
-    function matchingRequiresEth(
-        LibOrder.Order memory orderLeft, 
-        LibOrder.Order memory orderRight,
-        bytes32 leftOrderKeyHash,
-        bytes32 rightOrderKeyHash
-    ) internal view returns(bool) {
-        //ether is required when one of the orders is simultaneously offchain and has makeAsset = ETH
-        if (orderLeft.makeAsset.assetType.assetClass == LibAsset.ETH_ASSET_CLASS) {
-            if (!isTheSameAsOnChain(orderLeft, leftOrderKeyHash)) {
-                return true;
-            }
-        }
-
-        if (orderRight.makeAsset.assetType.assetClass == LibAsset.ETH_ASSET_CLASS) {
-            if (!isTheSameAsOnChain(orderRight, rightOrderKeyHash)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
+//    function matchingRequiresEth(
+//        LibOrder.Order memory orderLeft,
+//        LibOrder.Order memory orderRight,
+//        bytes32 leftOrderKeyHash,
+//        bytes32 rightOrderKeyHash
+//    ) internal view returns(bool) {
+//        //ether is required when one of the orders is simultaneously offchain and has makeAsset = ETH
+//        if (orderLeft.makeAsset.assetType.assetClass == LibAsset.ETH_ASSET_CLASS) {
+//            if (!isTheSameAsOnChain(orderLeft, leftOrderKeyHash)) {
+//                return true;
+//            }
+//        }
+//
+//        if (orderRight.makeAsset.assetType.assetClass == LibAsset.ETH_ASSET_CLASS) {
+//            if (!isTheSameAsOnChain(orderRight, rightOrderKeyHash)) {
+//                return true;
+//            }
+//        }
+//
+//        return false;
+//    }
 
     /// @dev Checks if order is the same as his on-chain version
     function isTheSameAsOnChain(LibOrder.Order memory order, bytes32 hash) internal view returns(bool) {

@@ -36,13 +36,13 @@ library LibFill {
 
     function fillRight(uint leftMakeValue, uint leftTakeValue, uint rightMakeValue, uint rightTakeValue) internal pure returns (FillResult memory result) {
         uint makerValue = LibMath.safeGetPartialAmountFloor(rightTakeValue, leftMakeValue, leftTakeValue);
-        require(makerValue <= rightMakeValue, "fillRight: unable to fill");
+        require(makerValue <= rightMakeValue, "e11");//fillRight: unable to fill
         return FillResult(rightTakeValue, makerValue);
     }
 
     function fillLeft(uint leftMakeValue, uint leftTakeValue, uint rightMakeValue, uint rightTakeValue) internal pure returns (FillResult memory result) {
         uint rightTake = LibMath.safeGetPartialAmountFloor(leftTakeValue, rightMakeValue, rightTakeValue);
-        require(rightTake <= leftMakeValue, "fillLeft: unable to fill");
+        require(rightTake <= leftMakeValue, "e12");//fillLeft: unable to fill
         return FillResult(leftMakeValue, leftTakeValue);
     }
 }
