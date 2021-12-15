@@ -6,7 +6,7 @@ const expectThrow = tests.expectThrow;
 contract("OperatorRole", accounts => {
 	let testing;
 
-	beforeEach(async () => {
+	before(async () => {
 		testing = await OperatorRoleTest.new();
 		await testing.__OperatorRoleTest_init();
 	});

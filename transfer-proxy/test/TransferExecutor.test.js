@@ -19,8 +19,7 @@ contract("TransferExecutor", accounts => {
 	let transferProxy;
 	let erc20TransferProxy;
 
-	beforeEach(async () => {
-
+	before(async () => {
 		transferProxy = await TransferProxy.new();
 		await transferProxy.__TransferProxy_init();
 		erc20TransferProxy = await ERC20TransferProxy.new();

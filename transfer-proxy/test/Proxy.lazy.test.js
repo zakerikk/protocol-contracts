@@ -11,7 +11,7 @@ contract("Exchange with LazyMint proxies", accounts => {
   let erc721Test;
   let erc1155Test;
 
-	beforeEach(async () => {
+	before(async () => {
 	  erc721Test = await ERC721LazyMintTest.new();
 	  erc1155Test = await ERC1155LazyMintTest.new();
 	});
