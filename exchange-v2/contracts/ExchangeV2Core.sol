@@ -38,7 +38,8 @@ abstract contract ExchangeV2Core is Initializable, OwnableUpgradeable, AssetMatc
 
     //struct to hold on-chain order and its protocol fee, fee is updated if order is updated
     struct OrderAndFee {
-        LibOrder.Order order;
+        uint value;
+        bytes32 orderHash;
         uint fee;
     }
 
@@ -66,26 +67,22 @@ abstract contract ExchangeV2Core is Initializable, OwnableUpgradeable, AssetMatc
     /// @dev Creates new or updates an on-chain order
     function upsertOrder(LibOrder.Order memory order) external payable {
         require(order.salt != 0, "salt == 0");
-        bytes32 orderKeyHash = LibOrder.hashKey(order, true);
+        bytes32 orderKeyHash = LibOrder.hashKey(order);
         LibOrderDataV2.DataV2 memory dataNewOrder = LibOrderData.parse(order);
 
         //checking if order is correct
         require(_msgSender() == order.maker, "order.maker must be msg.sender");
         require(orderNotFilled(order, orderKeyHash, dataNewOrder.isMakeFill), "order already filled");
-
+        require(order.dataType == LibOrderDataV2.onchain_V2, "wrong data type");
         uint newTotal = getTotalValue(order, orderKeyHash, dataNewOrder.originFees, dataNewOrder.isMakeFill);
 
         //value of makeAsset that needs to be transfered with tx 
         uint sentValue = newTotal;
-
+        uint oldTotal = onChainOrders[orderKeyHash].value;
+        onChainOrders[orderKeyHash].value = newTotal;
+        onChainOrders[orderKeyHash].orderHash = LibOrder.hash(order);
         //return locked assets only for ETH_ASSET_CLASS for now
-        if (checkOrderExistance(orderKeyHash) && order.makeAsset.assetType.assetClass == LibAsset.ETH_ASSET_CLASS) {
-            LibOrder.Order memory oldOrder = onChainOrders[orderKeyHash].order;
-            LibOrderDataV2.DataV2 memory dataOldOrder = LibOrderData.parse(oldOrder);
-            uint oldTotal = getTotalValue(oldOrder, orderKeyHash, dataOldOrder.originFees, dataOldOrder.isMakeFill);
-            onChainOrders[orderKeyHash].order = order;
-            //to prevent reentrancy
-
+        if (oldTotal > 0 && order.makeAsset.assetType.assetClass == LibAsset.ETH_ASSET_CLASS) {
             sentValue = (newTotal > oldTotal) ? newTotal.sub(oldTotal) : 0;
 
             //value of makeAsset that needs to be returned to order.maker due to updating of the order
@@ -93,7 +90,7 @@ abstract contract ExchangeV2Core is Initializable, OwnableUpgradeable, AssetMatc
 
             transferLockedAsset(LibAsset.Asset(order.makeAsset.assetType, returnValue), address(this), order.maker, UNLOCK, TO_MAKER);
         } else {
-            onChainOrders[orderKeyHash].order = order;
+            onChainOrders[orderKeyHash].value = newTotal;
             //to prevent reentrancy
         }
 
@@ -117,33 +114,29 @@ abstract contract ExchangeV2Core is Initializable, OwnableUpgradeable, AssetMatc
 
         emit UpsertOrder(order);
     }
+    
 
     function cancel(LibOrder.Order memory order) external {
         require(_msgSender() == order.maker, "not a maker");
         require(order.salt != 0, "0 salt can't be used");
 
-        bytes32 orderKeyHash = LibOrder.hashKey(order, true);
+        bytes32 orderKeyHash = LibOrder.hashKey(order);
 
         //if it's an on-chain order
-        if (checkOrderExistance(orderKeyHash)) {
-            LibOrder.Order memory temp = onChainOrders[orderKeyHash].order;
+        uint oldValue = onChainOrders[orderKeyHash].value;
+        if (oldValue > 0) {
             delete onChainOrders[orderKeyHash];
             //to prevent reentrancy
             //for now locking only ETH, so returning only locked ETH also
-            if (temp.makeAsset.assetType.assetClass == LibAsset.ETH_ASSET_CLASS) {
-                LibOrderDataV2.DataV2 memory dataTmpOrder = LibOrderData.parse(temp);
+
+            if (order.makeAsset.assetType.assetClass == LibAsset.ETH_ASSET_CLASS) {
                 transferLockedAsset(
-                    LibAsset.Asset(
-                        temp.makeAsset.assetType,
-                        getTotalValue(temp, orderKeyHash, dataTmpOrder.originFees, dataTmpOrder.isMakeFill)
-                    ),
+                    order.makeAsset,
                     address(this),
-                    temp.maker,
+                    order.maker,
                     UNLOCK, TO_MAKER
-                );
-            }
-        } else {
-            orderKeyHash = LibOrder.hashKey(order, false);
+                );  
+            }          
         }
 
         fills[orderKeyHash] = UINT256_MAX;
@@ -266,21 +259,22 @@ abstract contract ExchangeV2Core is Initializable, OwnableUpgradeable, AssetMatc
     function validateFull(LibOrder.Order memory order, bytes memory signature) internal view returns (bytes32 hashOrder) {
         LibOrder.validate(order);
 
-        hashOrder = LibOrder.hashKey(order, true);
+        hashOrder = LibOrder.hashKey(order);
+
+        bool isOnchain = isTheSameAsOnChain(order, hashOrder);
+
+        if (order.dataType == LibOrderDataV2.onchain_V2) {
+            require(isOnchain, "wrong order type");
+        }
         //no need to validate signature of an on-chain order
-        if (!isTheSameAsOnChain(order, hashOrder)) {
+        if (!isOnchain) {
             validate(order, signature);
-            hashOrder = LibOrder.hashKey(order, false);
         }
     }
 
     /// @dev Checks order for existance on-chain by orderKeyHash
     function checkOrderExistance(bytes32 orderKeyHash) public view returns (bool) {
-        if (onChainOrders[orderKeyHash].order.maker != address(0)) {
-            return true;
-        } else {
-            return false;
-        }
+        return onChainOrders[orderKeyHash].value > 0;
     }
 
     /// @dev Tranfers assets to lock or unlock them
@@ -366,10 +360,7 @@ abstract contract ExchangeV2Core is Initializable, OwnableUpgradeable, AssetMatc
 
     /// @dev Checks if order is the same as his on-chain version
     function isTheSameAsOnChain(LibOrder.Order memory order, bytes32 hash) internal view returns (bool) {
-        if (LibOrder.hash(order) == LibOrder.hash(onChainOrders[hash].order)) {
-            return true;
-        }
-        return false;
+        return onChainOrders[hash].orderHash  == LibOrder.hash(order);
     }
 
     function orderNotFilled(LibOrder.Order memory order, bytes32 hash, bool isMakeFill) internal view returns (bool){

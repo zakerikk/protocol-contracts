@@ -7,7 +7,7 @@ import "@rarible/royalties/contracts/LibPart.sol";
 
 library LibOrderDataV2 {
     bytes4 constant public V2 = bytes4(keccak256("V2"));
-
+    bytes4 constant public onchain_V2 = bytes4(keccak256("onchain_V2"));
     struct DataV2 {
         LibPart.Part[] payouts;
         LibPart.Part[] originFees;

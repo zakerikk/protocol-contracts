@@ -64,34 +64,35 @@ contract("ExchangeV2, sellerFee + buyerFee =  6%,", accounts => {
 	}
 	beforeEach(resetState);
   describe("estimate gas", () => {
-//		it("ERC20<->eth two offChain orders, Logic: Separate RTM + Onchain", async () => {
-//			await t1.mint(accounts[1], 100);
-//			await t1.approve(erc20TransferProxy.address, 10000000, { from: accounts[1] });
-//
-//			const right = Order(accounts[1], Asset(ERC20, enc(t1.address), 100), ZERO, Asset(ETH, "0x", 200), 1, 0, 0, "0xffffffff", "0x");
-//			const left = Order(accounts[2], Asset(ETH, "0x", 200), ZERO, Asset(ERC20, enc(t1.address), 100), 1, 0, 0, "0xffffffff", "0x");
-//			const tx = await testing.matchOrders(left, "0x", right, await getSignature(right, accounts[1]), { from: accounts[2], value: 300 });
-//			console.log("ERC20<->eth two offChain orders, with Separate RTM + Onchain Logic gas:", tx.receipt.gasUsed);
-//		})
-//
-//		it("ERC20<->eth two onChain orders, Logic: Separate RTM + Onchain", async () => {
-//		  const makerLeft = accounts[2];
-//		  const makerRight = accounts[1];
-//			await t1.mint(accounts[1], 100);
-//			await t1.approve(erc20TransferProxy.address, 10000000, { from: accounts[1] });
-//
-//			const right = Order(makerRight, Asset(ERC20, enc(t1.address), 100), ZERO, Asset(ETH, "0x", 200), 1, 0, 0, "0xffffffff", "0x");
-//			const left = Order(makerLeft, Asset(ETH, "0x", 200), ZERO, Asset(ERC20, enc(t1.address), 100), 1, 0, 0, "0xffffffff", "0x");
-//
-//      const createOrderLeft = async () => testing.upsertOrder(left, { from: makerLeft, value: 300, gasPrice: 0 });
-//      await verifyBalanceChange(makerLeft, 206, createOrderLeft);
-//
-//      const createOrderRight = async () => testing.upsertOrder(right, { from: makerRight });
-//
-//			const tx = await testing.matchOrders(left, "0x", right, await getSignature(right, accounts[1]), { from: accounts[2], value: 300 });
-//			console.log("ERC20<->eth two onChain orders, with Separate RTM + Onchain Logic gas:", tx.receipt.gasUsed);
-//		})
+		it("ERC20<->eth two offChain orders, Logic: Separate RTM + Onchain", async () => {
+			await t1.mint(accounts[1], 100);
+			await t1.approve(erc20TransferProxy.address, 10000000, { from: accounts[1] });
 
+			const right = Order(accounts[1], Asset(ERC20, enc(t1.address), 100), ZERO, Asset(ETH, "0x", 200), 1, 0, 0, "0xffffffff", "0x");
+			const left = Order(accounts[2], Asset(ETH, "0x", 200), ZERO, Asset(ERC20, enc(t1.address), 100), 1, 0, 0, "0xffffffff", "0x");
+			const tx = await testing.matchOrders(left, "0x", right, await getSignature(right, accounts[1]), { from: accounts[2], value: 300 });
+			console.log("ERC20<->eth two offChain orders, with Separate RTM + Onchain Logic gas:", tx.receipt.gasUsed);
+		})
+
+    /*
+		it("ERC20<->eth two onChain orders, Logic: Separate RTM + Onchain", async () => {
+		  const makerLeft = accounts[2];
+		  const makerRight = accounts[1];
+			await t1.mint(accounts[1], 100);
+			await t1.approve(erc20TransferProxy.address, 10000000, { from: accounts[1] });
+
+			const right = Order(makerRight, Asset(ERC20, enc(t1.address), 100), ZERO, Asset(ETH, "0x", 200), 1, 0, 0, "0xffffffff", "0x");
+			const left = Order(makerLeft, Asset(ETH, "0x", 200), ZERO, Asset(ERC20, enc(t1.address), 100), 1, 0, 0, "0xffffffff", "0x");
+
+      const createOrderLeft = async () => testing.upsertOrder(left, { from: makerLeft, value: 300, gasPrice: 0 });
+      await verifyBalanceChange(makerLeft, 206, createOrderLeft);
+
+      const createOrderRight = async () => testing.upsertOrder(right, { from: makerRight });
+
+			const tx = await testing.matchOrders(left, "0x", right, await getSignature(right, accounts[1]), { from: accounts[2], value: 300 });
+			console.log("ERC20<->eth two onChain orders, with Separate RTM + Onchain Logic gas:", tx.receipt.gasUsed);
+		})
+    */
   });
 
 //	describe("on-chain orders", () => {

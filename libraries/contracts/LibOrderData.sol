@@ -11,7 +11,7 @@ library LibOrderData {
             dataOrder.payouts = dataV1.payouts;
             dataOrder.originFees = dataV1.originFees;
             dataOrder.isMakeFill = false;
-        } else if (order.dataType == LibOrderDataV2.V2) {
+        } else if (order.dataType == LibOrderDataV2.V2 || order.dataType == LibOrderDataV2.onchain_V2) {
             dataOrder = LibOrderDataV2.decodeOrderDataV2(order.data);
         } else if (order.dataType == 0xffffffff) {
         } else {
