@@ -23,7 +23,8 @@
     "@daonomic/tests-common": "0.2.2",
     "@openzeppelin/truffle-upgrades": "^1.8.0",
     "@truffle/hdwallet-provider": "1.4.0",
-    "ethereumjs-util": "6.1.0"
+    "ethereumjs-util": "6.1.0",
+    "nanodelay": "^1.0.8"
   },
   "publishConfig": {
     "access": "public"

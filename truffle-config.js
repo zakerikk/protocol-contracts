@@ -62,7 +62,8 @@ module.exports = {
     rinkeby: createNetwork("rinkeby"),
     rinkeby2: createNetwork("rinkeby2"),
     polygon_mumbai: createNetwork("polygon_mumbai"),
-    polygon_mainnet: createNetwork("polygon_mainnet")
+    polygon_mainnet: createNetwork("polygon_mainnet"),
+    aurora_testnet: createNetwork("aurora_testnet"),
   },
 
   compilers: {

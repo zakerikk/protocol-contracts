@@ -1,11 +1,15 @@
 const BrokenLineTest = artifacts.require("BrokenLineTest.sol");
 const { expectThrow } = require("@daonomic/tests-common");
 const truffleAssert = require('truffle-assertions');
+const { delay } = require('nanodelay')
+
 contract("BrokenLine", accounts => {
 	let forTest;
 
 	async function assertCurrent(line) {
 		const current = await forTest.getCurrent();
+		console.log('line', line)
+		console.log('current', current)
 		assert.equal(current[0], line[0]);
 		assert.equal(current[1], line[1]);
 		assert.equal(current[2], line[2]);
@@ -26,7 +30,7 @@ contract("BrokenLine", accounts => {
 			await assertCurrent([10, 0, 0])
 		});
 
-		it("One line can be added, tail works", async () => {
+		it.only("One line can be added, tail works original", async () => {
 			await forTest.addTest([1, 101, 10], 1, 0);
 			await assertCurrent([1, 101, 10]);
 
@@ -43,6 +47,38 @@ contract("BrokenLine", accounts => {
 			await assertCurrent([12, 0, 0]);
 
 			await forTest.update(13);
+			await assertCurrent([13, 0, 0]);
+		});
+
+
+		it("One line can be added, tail works check", async () => {
+			await forTest.addTest([1, 101, 10], 1, 0);
+			await delay(3000)
+			await assertCurrent([1, 101, 10]);
+			await delay(3000)
+
+			await forTest.update(2);
+			await delay(3000)
+			await assertCurrent([2, 91, 10]);
+			await delay(3000)
+
+			await forTest.update(10);
+			await delay(3000)
+			await assertCurrent([10, 11, 10]);
+			await delay(3000)
+
+			await forTest.update(11);
+			await delay(3000)
+			await assertCurrent([11, 1, 1]);
+			await delay(3000)
+
+			await forTest.update(12);
+			await delay(3000)
+			await assertCurrent([12, 0, 0]);
+			await delay(3000)
+
+			await forTest.update(13);
+			await delay(3000)
 			await assertCurrent([13, 0, 0]);
 		});
 
