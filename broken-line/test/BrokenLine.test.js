@@ -8,8 +8,9 @@ contract("BrokenLine", accounts => {
 
 	async function assertCurrent(line) {
 		const current = await forTest.getCurrent();
-		console.log('line', line)
-		console.log('current', current)
+		console.log('getCurrent request', await forTest.getCurrent.request())
+		console.log('expected data in contract: ', line)
+		console.log('current data inside contract: ', current)
 		assert.equal(current[0], line[0]);
 		assert.equal(current[1], line[1]);
 		assert.equal(current[2], line[2]);
@@ -34,24 +35,24 @@ contract("BrokenLine", accounts => {
 			await forTest.addTest([1, 101, 10], 1, 0);
 			await assertCurrent([1, 101, 10]);
 
-			await forTest.update(2);
+			console.log('update: ', await forTest.update(2));
 			await assertCurrent([2, 91, 10]);
 
-			await forTest.update(10);
+			console.log('update: ', await forTest.update(10));
 			await assertCurrent([10, 11, 10]);
 
-			await forTest.update(11);
+			console.log('update: ', await forTest.update(11));
 			await assertCurrent([11, 1, 1]);
 
-			await forTest.update(12);
+			console.log('update: ', await forTest.update(12));
 			await assertCurrent([12, 0, 0]);
 
-			await forTest.update(13);
+			console.log('update: ', await forTest.update(13));
 			await assertCurrent([13, 0, 0]);
 		});
 
 
-		it("One line can be added, tail works check", async () => {
+		it("One line can be added, tail works with delay", async () => {
 			await forTest.addTest([1, 101, 10], 1, 0);
 			await delay(3000)
 			await assertCurrent([1, 101, 10]);
