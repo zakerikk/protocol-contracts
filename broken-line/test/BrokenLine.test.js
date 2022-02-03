@@ -17,7 +17,7 @@ contract("BrokenLine", accounts => {
 	}
 
 	beforeEach(async () => {
-		forTest = await BrokenLineTest.new();
+		forTest = await BrokenLineTest.at("0x2E407c38526927DF495DA8c0BB3B7E852A934919");
 	})
 
 	describe("Check add()", () => {
@@ -32,23 +32,23 @@ contract("BrokenLine", accounts => {
 		});
 
 		it.only("One line can be added, tail works original", async () => {
-			await forTest.addTest([1, 101, 10], 1, 0);
-			await assertCurrent([1, 101, 10]);
+			// await forTest.addTest([1, 101, 10], 1, 0);
+			// await assertCurrent([1, 101, 10]);
 
-			console.log('update: ', await forTest.update(2));
-			await assertCurrent([2, 91, 10]);
+			// console.log('update: ', await forTest.update(2));
+			// await assertCurrent([2, 91, 10]);
 
-			console.log('update: ', await forTest.update(10));
+			// console.log('update: ', await forTest.update(10));
 			await assertCurrent([10, 11, 10]);
 
-			console.log('update: ', await forTest.update(11));
-			await assertCurrent([11, 1, 1]);
+			// console.log('update: ', await forTest.update(11));
+			// await assertCurrent([11, 1, 1]);
 
-			console.log('update: ', await forTest.update(12));
-			await assertCurrent([12, 0, 0]);
+			// console.log('update: ', await forTest.update(12));
+			// await assertCurrent([12, 0, 0]);
 
-			console.log('update: ', await forTest.update(13));
-			await assertCurrent([13, 0, 0]);
+			// console.log('update: ', await forTest.update(13));
+			// await assertCurrent([13, 0, 0]);
 		});
 
 
